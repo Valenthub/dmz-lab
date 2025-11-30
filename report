@@ -3,60 +3,68 @@ Informe de configuración de DMZ con Cisco Packet Tracer
 # 1. Objetivo del laboratorio
 El objetivo base del laboratorio ha sido montar dos ACL's extendidas para controlar el tráfico entre red LAN, DMZ y la red interna, aplicar NAT y realizar la configuración de DMZ de manera segura en Packet Tracer.
 
+
 # 2. Topología de red
 
-> Describe la red. Puedes incluir una imagen si el software lo permite (captura de Packet Tracer).
+Esta red cuenta con una topología de red de una zona desmilitarizada (DMZ), éste crea una capa de seguridad (el servidor) principalmente en la red interna para garantizar una protección de la externa.
 
-- Cantidad de redes: __________
-- Dispositivos usados: __________
-- Breve descripciÃ³n de la funciÃ³n de cada zona (LAN, DMZ, Externa).
+- Cantidad de redes: 3
+- Dispositivos usados: 7 incluyendo el external (1 router, 3 switches, 1 servidor, 2 pcs)
+
+· LAN: La red privada y segura de la organización dónde están usuarios, datos confidenciales y recursos críticos. Éste es altamente restringido y monitorizado por el Router y el propósito principal es la operación interna y la seguridad de los datos.
+· DMZ (Zona desmilitarizada): Actúa como una zona de aislamiento entre la red externa e interna. La función que tiene es mantener los servidores accesibles al público, pero que estos no son críticos para las operaciones de la red interna. Su propósito es contener el riesgo si por ejemplo un atacante quiere comprometer la seguridad del servidor web, que este se quede atrapado en este DMZ y aún así siga el acceso a la red interna bloqueada por el router.
+· Externa: Es la representación de cualquier tipo de red no confiable o "Internet" en sí, es considerado una red hostil y sin confiada además que también es la fuente de tráfico que accede a los servicios públicos en la DMZ.
+
 
 # 3. Plan de direccionamiento IP
 
-Completa la tabla con las IPs asignadas (puedes copiarla del enunciado si no cambiÃ³).
 
-| Dispositivo             | IP              | MÃ¡scara           | Gateway           |
+| Dispositivo             | IP               | Máscara           | Gateway           |
 |-------------------------|------------------|-------------------|-------------------|
-| PC_Internal             |                  |                   |                   |
-| Server_DMZ              |                  |                   |                   |
-| PC_External             |                  |                   |                   |
-| Router_FW Gi0/0 (LAN)   |                  |                   |                   |
-| Router_FW Gi0/1 (DMZ)   |                  |                   |                   |
-| Router_FW Gi0/2 (Ext)   |                  |                   |                   |
+| PC_Internal             |   192.168.1.10   |   255.255.255.0   |    192.168.1.1    |
+| Server_DMZ              |   192.168.2.10   |   255.255.255.0   |    192.168.2.1    |
+| PC_External             |   192.168.3.10   |   255.255.255.0   |    192.168.3.1    |
+| Router_FW Gi0/0 (LAN)   |   192.168.1.1    |   255.255.255.0   |                   |
+| Router_FW Gi0/1 (DMZ)   |   192.168.2.1    |   255.255.255.0   |                   |
+| Router_FW Gi0/2 (Ext)   |   192.168.3.1    |   255.255.255.0   |                   |
 
 
-# 4. ConfiguraciÃ³n aplicada (resumen)
+# 4. Configuraciión aplicada (resumen)
 
 > Resume los comandos o pasos mÃ¡s relevantes que ejecutaste. Usa texto + fragmentos de cÃ³digo cuando sea necesario.
 
 - Interfaces configuradas con `ip address`
-- NAT:
-```bash
-ip nat inside source static 192.168.2.10 192.168.3.1
-```
-- ACLs:
-```bash
-access-list 101 permit tcp any host 192.168.3.1 eq 80
-access-list 100 deny ip 192.168.2.0 0.0.0.255 192.168.1.0 0.0.0.255
-```
-
+	· FastEthernet0/0
+	· FastEthernet0/1
+	· FastEthernet0/2
+	· GigabitEthernet0/0
+	· GigabitEthernet0/1
+	· GigabitEthernet0/2
+- NAT: Se da de identificador a las interfaces de DMZ y External un "nombre" dentro de la NAT.
+	· DMZ: ip nat inside / exit
+	· External: ip nat outside / exit
+Como paso final indicamos a la NAT que el acceso a la ip del servidor web permitido sea con la IP pùblica del router desde el external (Internet).
+	· Comando: ip nat source static 192.168.2.10 192.168.3.1
+- ACLs: Se hace la creación de dos ACLs extendidas para la red interna y externa, dónde en la interna indicamos el tráfico de red de paquetes de la capa de transporte de la DMZ a LAN, pero no establecemos mucha más comunicación entre estos.
+	· permit tcp 192.168.2.0 0.0.0.255 192.168.1.0 0.0.0.255 established
+	· deny ip 192.168.2.0 0.0.0.255 192.168.1.0 0.0.0.255
+Mientras que en la external únicamente permitimos el tráfico de tcp a la ip 192.168.3.1 con cualquier paquete tcp en el puerto 80
+	· permit tcp any host 192.168.3.1 eq www
 
 
 # 5. Verificaciones realizadas
 
-> Describe las pruebas y su resultado. Incluye capturas o salidas de comandos si se puede.
+> En el pdf adjunto con el informe, se dará a conocer capturas de pantalla sobre las verificaciones esenciales para llevarlo a cabo.
 
-- `ping` desde PC_Internal al router: âœ…
-- Acceso web desde PC_External: âœ…
-- Bloqueo de acceso desde DMZ a LAN: âœ…
+- "ping" al router con la IP 192.168.1.1 desde el PC_Internal
+- Prueba de acceso web desde PC_Internal y external
+- Verificación de alcance de conectividad desde external a la red
+- Verificación del bloqueo de acceso desde la DMZ a LAN
 
 
 # 6. Conclusiones y recomendaciones
+Personalmente opino que la creación de ACLs es un paso muy importante en las empresas que siempre cuentan con esta clase de páginas de cara al público ya que al final se puede comprometer toda una información posiblemente de una manera más sencilla para el atacante si esta no existiera. Cabe recalcar que siempre es necesario hacer comprobaciones de cómo va el tráfico de red y de que la conectividad básica esté en orden ya que de lo contrario se podría bloquear todo el tráfico.
 
-> Â¿QuÃ© aprendiste con este ejercicio? Â¿QuÃ© mejorarÃ­as?
-
-**Ejemplo:**
-AprendÃ­ a aplicar NAT y ACLs en un entorno simulado. Recomiendo verificar conectividad bÃ¡sica antes de aplicar reglas de firewall, ya que un error en la IP puede bloquear todo.
 
 # 7. Capturas de evidencia
-Las capturas de las evidencias solicitadas serán adjuntadas en un PDF acompañado de una breve descripción para poder distinguir hacia qué hace referencia.
+Las capturas solicitadas como evidencias necesarias se adjuntarán en un PDF con breve descripción para evitar confusiones acerca de cada evidencia encontrada.
